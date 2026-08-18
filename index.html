@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tree Money — Track Record</title>
+<style>
+:root{color-scheme:dark;--page:#0a0d0b;--ink:#eef2ee;--ink2:#b0bab1;--muted:#6f7a71;
+--border:rgba(255,255,255,.08);--accent:#4cc38a;--neg:#e5484d;--grid:#212823;
+--mono:ui-monospace,Consolas,monospace}
+*{box-sizing:border-box;margin:0}
+body{background:var(--page);color:var(--ink);
+font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;padding:40px 20px}
+.wrap{max-width:880px;margin:0 auto}
+h1{font-size:26px;letter-spacing:-.02em;display:flex;align-items:center;gap:11px}
+h1 svg{flex:none}
+.sub{color:var(--muted);margin:8px 0 30px;font-size:13.5px}
+.hero{display:flex;flex-wrap:wrap;gap:14px;margin-bottom:26px}
+.stat{border:1px solid var(--border);border-radius:12px;padding:14px 18px;min-width:150px;
+background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.008))}
+.stat .l{font:500 10.5px var(--mono);text-transform:uppercase;letter-spacing:.1em;
+color:var(--muted);margin-bottom:6px}
+.stat .v{font-size:22px;font-weight:700;letter-spacing:-.01em}
+.up{color:var(--accent)}.down{color:var(--neg)}
+.card{border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:18px;
+background:linear-gradient(180deg,rgba(255,255,255,.025),rgba(255,255,255,.006))}
+.card h2{font-size:15px;margin-bottom:14px}
+svg text{font:10.5px var(--mono);fill:var(--muted)}
+.gl{stroke:var(--grid)}
+.foot{color:var(--muted);font-size:12px;margin-top:26px;line-height:1.7}
+a{color:var(--accent)}
+</style>
+</head>
+<body><div class="wrap">
+<h1><svg width="27" height="27" viewBox="0 0 26 26"><rect rx="7" width="26" height="26"
+fill="#4cc38a" fill-opacity=".16"/><path d="M5.5 18.5 L10.5 12 L13.5 15 L20.5 6.5"
+stroke="#4cc38a" stroke-width="2.4" fill="none" stroke-linecap="round"
+stroke-linejoin="round"/><path d="M15.5 6.5 H20.5 V11.5" stroke="#4cc38a"
+stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+Tree Money — track record</h1>
+<p class="sub">Simulated portfolio (paper trading) managed by a multi-agent AI committee
+on real market prices. Performance-only: holdings stay private, every value is
+hash-chained and committed at publication time — history cannot be rewritten.</p>
+<div class="hero" id="hero"></div>
+<div class="card"><h2>Equity vs benchmark</h2><div id="chart"></div></div>
+<div class="foot">Auto-generated on every snapshot. Each ledger entry embeds the SHA256
+of the previous one plus a <em>commitment</em> to the full private snapshot — holdings
+can be revealed and verified at any later date (instructions in the README).
+Not investment advice.</div>
+</div>
+<script>
+const $=s=>document.querySelector(s);
+const pct=v=>v==null?"n/a":(v>=0?"+":"\u2212")+Math.abs(v*100).toFixed(2)+"%";
+const usd=v=>"$"+Math.round(v).toLocaleString("en-US");
+fetch("data.json").then(r=>r.json()).then(d=>{
+  const s=d.stats;
+  const cls=v=>v==null?"":v>=0?"up":"down";
+  const latestEq=d.series.equity[d.series.equity.length-1];
+  $("#hero").innerHTML=`
+    <div class="stat"><div class="l">Equity</div><div class="v">${usd(latestEq)}</div></div>
+    <div class="stat"><div class="l">Total return</div><div class="v ${cls(s.total_return)}">${pct(s.total_return)}</div></div>
+    <div class="stat"><div class="l">Vs ${d.benchmark}</div><div class="v ${cls(s.vs_benchmark)}">${pct(s.vs_benchmark)}</div></div>
+    <div class="stat"><div class="l">Snapshots</div><div class="v">${s.snapshots}</div></div>
+    <div class="stat"><div class="l">Since</div><div class="v" style="font-size:15px">${s.since.slice(0,10)}</div></div>`;
+  drawChart(d);
+});
+function drawChart(d){
+  const W=840,H=280,pad={t:12,r:70,b:26,l:8};
+  const iw=W-pad.l-pad.r,ih=H-pad.t-pad.b;
+  const eq=d.series.equity,bm=d.series.benchmark.map(v=>v==null?null:v);
+  const all=eq.concat(bm.filter(v=>v!=null));
+  const lo=Math.min(...all)*0.995,hi=Math.max(...all)*1.005,span=hi-lo||1;
+  const n=eq.length;
+  const x=i=>pad.l+(n<2?iw/2:i/(n-1)*iw),y=v=>pad.t+ih-(v-lo)/span*ih;
+  const path=(arr,color)=>{
+    const pts=arr.map((v,i)=>v==null?null:`${x(i).toFixed(1)},${y(v).toFixed(1)}`)
+      .filter(Boolean);
+    if(!pts.length)return"";
+    return `<path fill="none" stroke="${color}" stroke-width="2" d="M${pts.join("L")}"/>`
+      +(pts.length===1?`<circle cx="${pts[0].split(",")[0]}" cy="${pts[0].split(",")[1]}" r="4" fill="${color}"/>`:"");
+  };
+  let grid="";
+  for(let k=0;k<5;k++){const v=lo+span*k/4;
+    grid+=`<line class="gl" x1="${pad.l}" x2="${pad.l+iw}" y1="${y(v)}" y2="${y(v)}"/>
+    <text x="${pad.l+iw+6}" y="${y(v)+4}">${usd(v)}</text>`;}
+  const lbl=(i,anchor)=>`<text x="${x(i)}" y="${H-6}" text-anchor="${anchor}">${d.series.dates[i].slice(0,10)}</text>`;
+  $("#chart").innerHTML=`<div style="display:flex;gap:16px;margin-bottom:8px;
+    font:500 12px ui-monospace,monospace;color:#b0bab1">
+    <span><span style="display:inline-block;width:10px;height:10px;border-radius:3px;
+    background:#4cc38a;margin-right:6px"></span>Tree Money</span>
+    <span><span style="display:inline-block;width:10px;height:10px;border-radius:3px;
+    background:#d95926;margin-right:6px"></span>${d.benchmark} buy&hold</span></div>
+  <svg viewBox="0 0 ${W} ${H}" style="width:100%">${grid}
+  ${path(bm,"#d95926")}${path(eq,"#4cc38a")}
+  ${lbl(0,"start")}${n>1?lbl(n-1,"end"):""}</svg>`;
+}
+</script>
+</body></html>
