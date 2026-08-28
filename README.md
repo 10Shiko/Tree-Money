@@ -10,11 +10,11 @@ NAV and benchmark are public — the same way funds report.
 | | |
 |---|---|
 | First snapshot | 2026-08-17T18:46:28Z |
-| Latest snapshot | 2026-08-27T20:30:05Z |
-| Total snapshots | 14 |
-| Equity | $99,136.94 |
-| Total return | -0.86% |
-| Vs SPY buy & hold | -0.58% |
+| Latest snapshot | 2026-08-28T20:30:05Z |
+| Total snapshots | 15 |
+| Equity | $98,472.14 |
+| Total return | -1.53% |
+| Vs SPY buy & hold | -1.02% |
 
 ## Integrity
 
